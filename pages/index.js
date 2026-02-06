@@ -1,35 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-
-// دالة التحقق من صلاحية الإعلان (24 ساعة)
-const isAdValid = (createdAt) => {
-  const dayInMilliseconds = 24 * 60 * 60 * 1000;
-  const expireTime = new Date(createdAt).getTime() + dayInMilliseconds;
-  return Date.now() < expireTime;
-};
+import Head from 'next/head';
 
 export default function Home() {
-  const [nickname, setNickname] = useState('');
+  const [step, setStep] = useState('landing'); 
   const [visitedCount, setVisitedCount] = useState(0);
   const [timer, setTimer] = useState(0);
   const [isAdActive, setIsAdActive] = useState(false);
-  const router = useRouter();
+  const [nickname, setNickname] = useState('');
 
-  // قاعدة بيانات تجريبية للإعلانات (يتم جلبها من السيرفر مستقبلاً)
-  const allAds = [
-    { id: 1, title: "متجر الهواتف الذكية - وهران", url: "https://google.com", created_at: new Date().toISOString() },
-    { id: 2, title: "خدمات فليكسي وباريدي موب", url: "https://bing.com", created_at: new Date().toISOString() },
-    { id: 3, title: "عقارات الجزائر العاصمة", url: "https://yahoo.com", created_at: new Date().toISOString() },
-    { id: 4, title: "تكنولوجيا وإعلام آلي", url: "https://duckduckgo.com", created_at: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString() }, // إعلان منتهي (أكثر من 24 ساعة)
-  ];
+  // الرابط الخاص بك (Mouzaia Delivery)
+  const myAdUrl = "https://t.me/MouzaiaDelivery";
 
-  // تصفية الإعلانات الصالحة فقط
-  const activeAds = allAds.filter(ad => isAdValid(ad.created_at));
-
-  const startAdTask = (url) => {
-    window.open(url, '_blank');
+  const startTask = () => {
+    window.open(myAdUrl, '_blank');
     setIsAdActive(true);
-    setTimer(10); // مؤقت 10 ثواني
+    setTimer(10); // 10 ثواني انتظار
   };
 
   useEffect(() => {
@@ -43,72 +28,92 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [isAdActive, timer]);
 
-  const handleEnterChat = () => {
-    if (nickname.trim()) {
-      localStorage.setItem('chat_nick', nickname);
-      router.push('/chat');
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 text-white font-sans">
-      <div className="bg-slate-800 p-8 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-md text-center">
-        <h1 className="text-4xl font-black mb-2 text-blue-500 italic">Chat Traffic DZ</h1>
-        <p className="text-slate-400 mb-8 font-medium">دردش، تبادل الزيارات، واستثمر</p>
+    <div className="min-h-screen bg-[#0f172a] text-white font-sans selection:bg-blue-500">
+      <Head>
+        <title>Chat Traffic DZ | تبادل الزيارات في الجزائر</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+      </Head>
 
-        {visitedCount < 4 ? (
-          <div className="space-y-6">
-            <div className="bg-blue-900/30 p-4 rounded-lg border border-blue-500/50">
-              <p className="text-sm text-blue-200 font-bold">
-                ⚠️ مهمة الدخول: زيارة 4 روابط أعضاء ({visitedCount}/4)
-              </p>
-            </div>
-            
-            <div className="space-y-3 text-right">
-              {activeAds.slice(0, 4).map((ad, index) => (
-                <button
-                  key={ad.id}
-                  disabled={isAdActive || visitedCount !== index}
-                  onClick={() => startAdTask(ad.url)}
-                  className={`w-full p-4 rounded-xl text-sm font-bold transition-all flex justify-between items-center ${
-                    visitedCount > index 
-                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
-                    : visitedCount === index 
-                    ? 'bg-blue-600 hover:bg-blue-500 shadow-lg animate-pulse' 
-                    : 'bg-slate-700 text-slate-500 opacity-50'
-                  }`}
-                >
-                  <span>{visitedCount > index ? "✅ تمت الزيارة" : `زيارة: ${ad.title}`}</span>
-                  {visitedCount === index && isAdActive && <span className="bg-black/30 px-2 py-1 rounded">{timer}ث</span>}
-                </button>
+      {/* 1. الواجهة الاحترافية (Landing Page) */}
+      {step === 'landing' && (
+        <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
+          <div className="mb-6 inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 px-4 py-2 rounded-full">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+            </span>
+            <span className="text-blue-400 text-sm font-bold uppercase tracking-wider">مباشر من موزاية إلى كل الجزائر</span>
+          </div>
+
+          <h1 className="text-6xl md:text-8xl font-black mb-6 tracking-tighter">
+            CHAT <span className="text-blue-600">TRAFFIC</span> DZ
+          </h1>
+          
+          <p className="text-slate-400 text-lg md:text-xl max-w-2xl mb-12 leading-relaxed">
+            المنصة الأولى لتبادل الزيارات الحقيقية والدردشة بين المستثمرين وأصحاب المشاريع. 
+            <span className="text-white font-bold"> ابدأ الآن واصنع جمهورك مجاناً.</span>
+          </p>
+
+          <button 
+            onClick={() => setStep('task')}
+            className="group relative px-12 py-5 bg-blue-600 rounded-2xl font-black text-2xl hover:bg-blue-500 transition-all shadow-[0_0_40px_rgba(37,99,235,0.4)] overflow-hidden"
+          >
+            <span className="relative z-10">دخول المنصة 🚀</span>
+            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+          </button>
+        </div>
+      )}
+
+      {/* 2. نظام التحقق (الـ 4 زيارات لرابط موزاية ديليفري) */}
+      {step === 'task' && (
+        <div className="flex items-center justify-center min-h-screen p-4">
+          <div className="bg-[#1e293b] p-8 rounded-[2rem] border border-slate-700 w-full max-w-md shadow-2xl">
+            <h2 className="text-2xl font-bold mb-2 text-center text-blue-400">دعم قنوات المجتمع</h2>
+            <p className="text-slate-400 text-center mb-8 text-sm">يجب زيارة الرابط 4 مرات لتفعيل حسابك</p>
+
+            <div className="space-y-4">
+              {[1, 2, 3, 4].map((num) => (
+                <div key={num} className={`relative p-4 rounded-2xl border transition-all ${visitedCount >= num ? 'bg-green-500/10 border-green-500/50' : 'bg-slate-900 border-slate-700'}`}>
+                  <div className="flex justify-between items-center">
+                    <span className={`font-bold ${visitedCount >= num ? 'text-green-500' : 'text-slate-500'}`}>
+                      {visitedCount >= num ? '✅ تمت الزيارة' : `المهمة رقم ${num}`}
+                    </span>
+                    {visitedCount === num - 1 && (
+                      <button 
+                        disabled={isAdActive}
+                        onClick={startTask}
+                        className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl text-xs font-black transition-all disabled:opacity-50"
+                      >
+                        {isAdActive ? `انتظر ${timer}ث` : 'زيارة الآن'}
+                      </button>
+                    )}
+                  </div>
+                </div>
               ))}
             </div>
+
+            {visitedCount >= 4 && (
+              <div className="mt-8 space-y-4 animate-bounce-in">
+                <input 
+                  type="text" 
+                  placeholder="اختر اسمك المستعار..."
+                  className="w-full p-4 rounded-xl bg-[#0f172a] border border-blue-500/50 outline-none focus:ring-2 ring-blue-500 text-center font-bold"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                />
+                <button className="w-full bg-green-600 py-4 rounded-xl font-black text-xl hover:bg-green-500 shadow-lg transition-all">
+                  دخول الدردشة 💬
+                </button>
+              </div>
+            )}
             
-            <p className="text-[10px] text-slate-500 italic">
-              * جميع الإعلانات تتجدد كل 24 ساعة لضمان الجودة.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4 animate-in fade-in zoom-in duration-500">
-            <div className="bg-green-500/20 p-4 rounded-lg border border-green-500/50 text-green-400 font-bold mb-4">
-              ✅ أحسنت! تم إكمال المهام بنجاح
-            </div>
-            <input
-              type="text"
-              placeholder="اختر اسماً مستعاراً..."
-              className="w-full p-4 rounded-xl bg-slate-700 border border-slate-600 focus:border-blue-500 outline-none transition text-center text-lg font-bold"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-            />
-            <button 
-              onClick={handleEnterChat}
-              className="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold transition-all shadow-xl text-lg"
-            >
-              دخول مجتمع المستثمرين
+            <button onClick={() => setStep('landing')} className="w-full mt-6 text-slate-600 text-[10px] hover:text-slate-400 transition-colors uppercase tracking-widest">
+              العودة للرئيسية
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
