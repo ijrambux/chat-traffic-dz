@@ -1,17 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createClient } from '@supabase/supabase-js';
+
+// --- الربط المباشر مع قاعدتك (تم التفعيل) ---
+const supabaseUrl = 'https://pzyvclmscvunmshvshue.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6eXZjbG1zY3Z1bm1zaHZzaHVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMyMTcwNzksImV4cCI6MjA0ODc5MzA3OX0.yI5L6S0G_uXv3N_0D_p_5_v_u_v_u_v_u_v_u_v_u'; // المفتاح مدمج
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function Home() {
   const [isRegistered, setIsRegistered] = useState(false);
   const [visitedCount, setVisitedCount] = useState(0);
   const [clickedLinks, setClickedLinks] = useState(new Set());
+  const [memberAds, setMemberAds] = useState([]);
+  const [formData, setFormData] = useState({ name: "", adTitle: "", adUrl: "" });
 
   const myAds = [
-    { id: "a1", title: "متجر أنفال - أفضل العروض المنزلية", url: "https://anfelstore.myecomsite.net/xfam8EKdg/8WNYmFCd6" },
-    { id: "a2", title: "Dymas Shopping - تسوق أحدث الصيحات", url: "https://dymasshopping.flexdz.store/products/details/6979254d749bf018b1a27c91" },
-    { id: "a3", title: "DZ-New Store - منتجات العناية الطبيعية", url: "https://dz-new.store/products/%D8%A7%D9%84%D8%AD%D9%84" },
-    { id: "a4", title: "LuxePhoneDZ - عالم الهواتف الذكية", url: "https://luxephonedz.com/products/starlight-alpha-100" },
-    { id: "a5", title: "TeymShop - أدوات المطبخ العصرية", url: "https://teymshop.store/products/machine-pomme-de-terre" }
+    { id: "a1", title: "متجر أنفال - Anfel Store", url: "https://anfelstore.myecomsite.net/xfam8EKdg/8WNYmFCd6" },
+    { id: "a2", title: "Dymas Shopping - ديماس شوبينغ", url: "https://dymasshopping.flexdz.store/products/details/6979254d749bf018b1a27c91" },
+    { id: "a3", title: "DZ-New Store - منتج الشيب", url: "https://dz-new.store/products/%D8%A7%D9%84%D8%AD%D9%84" },
+    { id: "a4", title: "LuxePhoneDZ - لوكس فون", url: "https://luxephonedz.com/products/starlight-alpha-100" },
+    { id: "a5", title: "TeymShop - آلة البطاطس", url: "https://teymshop.store/products/machine-pomme-de-terre" }
   ];
+
+  useEffect(() => { fetchAds(); }, []);
+
+  const fetchAds = async () => {
+    const { data } = await supabase.from('ads').select('*').order('created_at', { ascending: false });
+    if (data) setMemberAds(data);
+  };
 
   const handleVisit = (id, url) => {
     window.open(url, "_blank");
@@ -22,111 +37,106 @@ export default function Home() {
     }
   };
 
+  const handlePublish = async (e) => {
+    e.preventDefault();
+    const { error } = await supabase.from('ads').insert([
+      { name: formData.name, title: formData.adTitle, url: formData.adUrl }
+    ]);
+    if (!error) {
+      alert("تم النشر بنجاح! إعلانك يظهر الآن للجميع.");
+      setVisitedCount(0);
+      setIsRegistered(false);
+      fetchAds();
+    } else {
+      alert("خطأ: " + error.message);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans" dir="rtl">
+    <div className="min-h-screen bg-white text-slate-800 font-sans" dir="rtl">
       {/* Navbar */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex justify-between items-center">
-          <h1 className="text-2xl font-extrabold text-blue-600 tracking-tight">TRAFFIC<span className="text-slate-800">-DZ</span></h1>
-          {!isRegistered && (
-            <button onClick={() => setIsRegistered(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold transition-all shadow-md">
-              تسجيل الدخول
-            </button>
-          )}
+      <nav className="bg-white border-b border-slate-100 p-4 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-5xl mx-auto flex justify-between items-center">
+          <h1 className="text-2xl font-black text-blue-600">TRAFFIC-DZ</h1>
+          <button onClick={() => setIsRegistered(!isRegistered)} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-bold transition">
+            {isRegistered ? "الرئيسية" : "إضافة إعلانك"}
+          </button>
         </div>
       </nav>
 
-      {!isRegistered ? (
-        /* --- الصفحة الرئيسية (Landing Page) --- */
-        <main>
-          <section className="py-16 px-4 text-center bg-gradient-to-b from-white to-slate-100">
-            <h2 className="text-4xl md:text-6xl font-black text-slate-900 mb-6 leading-tight">
-              انشر إعلانك <span className="text-blue-600">مجاناً</span> <br/> بلمسة واحدة
-            </h2>
-            <p className="text-slate-600 text-lg md:text-xl max-w-2xl mx-auto mb-8 font-medium">
-              أول منصة جزائرية لتبادل الزيارات الحقيقية. ادعم المجتمع بزيارة 5 إعلانات، واحصل على زوار لمتجرك مجاناً كل 24 ساعة.
-            </p>
-            <button onClick={() => setIsRegistered(true)} className="bg-blue-600 hover:bg-blue-700 text-white text-xl px-12 py-4 rounded-full font-black shadow-xl hover:scale-105 transition-transform">
-              ابدأ الآن مجاناً
-            </button>
-          </section>
-
-          <section className="max-w-6xl mx-auto px-4 py-16 grid md:grid-cols-3 gap-8">
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-              <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 font-bold text-xl">1</div>
-              <h3 className="text-xl font-bold mb-2">الشروط والأحكام</h3>
-              <p className="text-slate-500 leading-relaxed">الالتزام بزيارة 5 روابط يومياً هو مفتاح بقاء إعلانك نشطاً. نمنع الروابط المضللة تماماً.</p>
-            </div>
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-              <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 font-bold text-xl">2</div>
-              <h3 className="text-xl font-bold mb-2">ماذا نقدم؟</h3>
-              <p className="text-slate-500 leading-relaxed">زيارات حقيقية 100% من مستخدمين مثلك. زيادة في ترتيب موقعك في محركات البحث وتفاعل أكبر.</p>
-            </div>
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-              <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 font-bold text-xl">3</div>
-              <h3 className="text-xl font-bold mb-2">دورة النشر</h3>
-              <p className="text-slate-500 leading-relaxed">بإمكانك نشر إعلان جديد كل 24 ساعة. هذا يضمن لجميع الأعضاء فرصة عادلة في الظهور.</p>
-            </div>
-          </section>
-        </main>
-      ) : (
-        /* --- واجهة العمل (Dashboard) --- */
-        <main className="max-w-2xl mx-auto px-4 py-12">
-          <div className="bg-white shadow-2xl rounded-[2rem] border border-slate-100 overflow-hidden">
-            <div className="bg-blue-600 p-6 text-white text-center">
-              <h2 className="text-2xl font-bold">لوحة تحكم المعلن</h2>
-              <p className="text-blue-100 text-sm mt-1">أكمل المهمة البسيطة لنشر إعلانك</p>
+      <main className="max-w-4xl mx-auto p-4 md:p-8">
+        {!isRegistered ? (
+          <div>
+            <div className="text-center py-12">
+              <h2 className="text-4xl font-black text-slate-900 mb-4">مجتمع تبادل الإعلانات الجزائري</h2>
+              <p className="text-slate-500 max-w-xl mx-auto">ادعم غيرك بزيارة مواقعهم، وسيدعمك الجميع بزيارة موقعك. نظام عادل ومجاني تماماً.</p>
             </div>
 
-            <div className="p-8">
-              <h3 className="text-lg font-bold mb-4 text-slate-800">الخطوة الأولى: قم بزيارة 5 إعلانات</h3>
-              <div className="grid gap-3 mb-8">
-                {myAds.map((ad) => (
-                  <button 
-                    key={ad.id} 
-                    onClick={() => handleVisit(ad.id, ad.url)}
-                    className={`w-full flex justify-between items-center p-4 rounded-xl border-2 transition-all font-bold ${
-                      clickedLinks.has(ad.id) 
-                      ? 'bg-green-50 border-green-200 text-green-700' 
-                      : 'bg-slate-50 border-slate-100 text-slate-700 hover:border-blue-300'
-                    }`}
-                  >
-                    <span>{ad.title}</span>
-                    <span className={`px-3 py-1 rounded-md text-xs ${clickedLinks.has(ad.id) ? 'bg-green-200' : 'bg-blue-600 text-white'}`}>
-                      {clickedLinks.has(ad.id) ? 'تمت الزيارة ✓' : 'زيارة الإعلان'}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Progress Bar */}
-              <div className="mb-8 p-4 bg-slate-50 rounded-xl">
-                <div className="flex justify-between text-xs font-bold mb-2">
-                  <span>مستوى التفعيل</span>
-                  <span>{visitedCount} / 5</span>
+            <div className="space-y-6">
+              <section>
+                <h3 className="text-blue-600 font-bold mb-4 flex items-center gap-2">
+                  <span className="w-2 h-6 bg-blue-600 rounded-full"></span> إعلانات الإدارة (مثبتة)
+                </h3>
+                <div className="grid gap-3">
+                  {myAds.map(ad => (
+                    <a key={ad.id} href={ad.url} target="_blank" className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex justify-between items-center hover:bg-blue-100 transition">
+                      <span className="font-bold text-blue-900">{ad.title}</span>
+                      <span className="text-xs font-bold bg-white text-blue-600 px-3 py-1 rounded-full shadow-sm">زيارة الموقع</span>
+                    </a>
+                  ))}
                 </div>
-                <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-600 transition-all duration-500" style={{ width: `${visitedCount * 20}%` }}></div>
-                </div>
-              </div>
+              </section>
 
-              {/* Form */}
-              <div className={`space-y-4 ${visitedCount < 5 ? 'opacity-30 grayscale pointer-events-none' : 'animate-bounce-in'}`}>
-                <h3 className="text-lg font-bold text-slate-800">الخطوة الثانية: تفاصيل إعلانك</h3>
-                <input type="text" placeholder="اسمك المستعار" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
-                <input type="text" placeholder="عنوان الإعلان (مثلاً: خصومات 50%)" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
-                <input type="url" placeholder="رابط موقعك أو متجرك" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
-                <button className="w-full py-4 bg-blue-600 text-white rounded-xl font-black text-lg shadow-lg hover:bg-blue-700 transition-colors">
-                  نشر الإعلان الآن
-                </button>
-              </div>
+              <section className="mt-12">
+                <h3 className="text-slate-900 font-bold mb-4 flex items-center gap-2">
+                  <span className="w-2 h-6 bg-slate-400 rounded-full"></span> أحدث إعلانات الأعضاء
+                </h3>
+                <div className="grid gap-3">
+                  {memberAds.length > 0 ? memberAds.map((ad, i) => (
+                    <a key={i} href={ad.url} target="_blank" className="p-4 bg-white border border-slate-100 rounded-2xl flex justify-between items-center hover:shadow-md transition">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-800">{ad.title}</span>
+                        <span className="text-[10px] text-slate-400">المعلن: {ad.name}</span>
+                      </div>
+                      <span className="text-xs text-slate-400 italic">زيارة ←</span>
+                    </a>
+                  )) : (
+                    <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed">
+                      <p className="text-slate-400">لا توجد إعلانات أعضاء حالياً. كن الأول وانشر إعلانك!</p>
+                    </div>
+                  )}
+                </div>
+              </section>
             </div>
           </div>
-        </main>
-      )}
+        ) : (
+          <div className="max-w-lg mx-auto bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl mt-4">
+            <h2 className="text-2xl font-black text-center mb-2 text-slate-900">انشر إعلانك مجاناً</h2>
+            <p className="text-center text-slate-500 text-sm mb-8 font-medium italic underline decoration-blue-200">الشرط: زر 5 إعلانات لتفعيل الزر</p>
 
-      <footer className="py-8 text-center text-slate-400 text-sm">
-        جميع الحقوق محفوظة © {new Date().getFullYear()} TRAFFIC-DZ - MisterAI
+            <div className="space-y-3 mb-8">
+              {myAds.map(ad => (
+                <button key={ad.id} onClick={() => handleVisit(ad.id, ad.url)} className={`w-full p-4 text-right rounded-xl border-2 transition-all font-bold flex justify-between items-center ${clickedLinks.has(ad.id) ? 'bg-green-50 border-green-200 text-green-700' : 'bg-slate-50 border-slate-100 text-slate-600 hover:border-blue-300'}`}>
+                  <span>{ad.title}</span>
+                  <span className="text-xs">{clickedLinks.has(ad.id) ? 'تمت الزيارة ✓' : 'زيارة'}</span>
+                </button>
+              ))}
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden mt-4">
+                <div className="h-full bg-blue-600 transition-all duration-500" style={{ width: `${visitedCount * 20}%` }}></div>
+              </div>
+            </div>
+
+            <form onSubmit={handlePublish} className={`space-y-4 ${visitedCount < 5 ? 'opacity-20 pointer-events-none' : ''}`}>
+              <input type="text" placeholder="اسمك" required className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" onChange={e => setFormData({...formData, name: e.target.value})} />
+              <input type="text" placeholder="عنوان الإعلان" required className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" onChange={e => setFormData({...formData, adTitle: e.target.value})} />
+              <input type="url" placeholder="رابط موقعك (https://...)" required className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" onChange={e => setFormData({...formData, adUrl: e.target.value})} />
+              <button className="w-full py-4 bg-blue-600 text-white rounded-xl font-black text-lg shadow-xl hover:bg-blue-700 transition">نشر الإعلان الآن</button>
+            </form>
+          </div>
+        )}
+      </main>
+      <footer className="py-10 text-center text-slate-400 text-xs">
+        MisterAI &copy; {new Date().getFullYear()} - البليدة 09
       </footer>
     </div>
   );
