@@ -19,7 +19,7 @@ export default function Home() {
   const myAds = [
     { id: "1", title: "متجر أنفال - Anfel Store", url: "https://anfelstore.myecomsite.net/xfam8EKdg/8WNYmFCd6" },
     { id: "2", title: "ديماس شوبينغ - Dymas", url: "https://dymasshopping.flexdz.store/products/details/6979254d749bf018b1a27c91" },
-    { id: "3", title: "منتج الشيب - DZ-New", url: "https://dz-new.store/products/%D8%A7%D9%84%D8%AD%D9%84" },
+    { id: "3", title: "منتج الشيب - DZ-New", url: "https://chrimhanidz.com/creme-handhale-soumia-29-nov/?utm_medium=paid&utm_source=fb&utm_id=120239642085720720&utm_content=120239642116680720&utm_term=120239642116580720&utm_campaign=120239642085720720&fbclid=IwY2xjawPzIqBleHRuA2FlbQEwAGFkaWQBqy1RRSs1wHNydGMGYXBwX2lkEDIyMjAzOTE3ODgyMDA4OTIAAR4xeg5ZMBpEWQ1_itkZQ-_y-jWziAYHKRzad6JTk9wlDtmmSfGFc1HPDrgIWA_aem__dquT722S1jE7nsTxTwSag" },
     { id: "4", title: "لوكس فون - LuxePhone", url: "https://luxephonedz.com/products/starlight-alpha-100" },
     { id: "5", title: "آلة البطاطس - TeymShop", url: "https://teymshop.store/products/machine-pomme-de-terre" }
   ];
