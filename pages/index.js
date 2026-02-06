@@ -34,29 +34,20 @@ export default function Home() {
     }
   }, []);
 
-  // دالة معالجة الزيارة - تم إصلاحها لتعمل بشكل فوري
   const handleAdClick = async (ad, index) => {
     window.open(ad.url, "_blank");
-    
-    // تحديث عداد الزيارات في قاعدة البيانات للأعضاء فقط
     if (ad.id) {
       await supabase.from('ads').update({ clicks: (ad.clicks || 0) + 1 }).eq('id', ad.id);
     }
-
-    // تحديث الحالة المحلية لحساب عدد الزيارات المطلوبة للنشر
     setClickedLinks((prev) => {
       const newSet = new Set(prev);
-      newSet.add(ad.id || `admin-${index}`); // استخدام معرف فريد
+      newSet.add(ad.id || `target-${index}`);
       return newSet;
     });
   };
 
   const handlePublish = async (e) => {
     e.preventDefault();
-    if (clickedLinks.size < Math.min(allAds.length, 5) && allAds.length > 0) {
-        return alert("يرجى زيارة المواقع المطلوبة أولاً!");
-    }
-    
     setLoading(true);
     const { error } = await supabase.from('ads').insert([
       { name: formData.name, title: formData.title, url: formData.url, clicks: 0 }
@@ -72,73 +63,109 @@ export default function Home() {
     }
   };
 
-  // تحديد المواقع المطلوبة للزيارة (أول 5 إعلانات)
   const targetAds = allAds.slice(0, 5);
-  const visitedCount = clickedLinks.size;
   const requiredCount = Math.min(allAds.length, 5);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans" dir="rtl">
-      <nav className="p-4 bg-blue-700 text-white shadow-lg flex justify-between items-center sticky top-0 z-50">
-        <span className="font-black text-xl italic">TRAFFIC-DZ</span>
-        <button onClick={() => setStep(step === 1 ? 2 : 1)} className="bg-yellow-400 text-blue-900 px-5 py-1.5 rounded-full font-bold text-sm shadow-md">
-          {step === 1 ? "➕ أنشر إعلانك" : "🏠 القائمة"}
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col" dir="rtl">
+      {/* Navbar مع شعار يلمع بالأزرق */}
+      <nav className="p-4 bg-white border-b border-slate-200 shadow-sm flex justify-between items-center sticky top-0 z-50">
+        <div className="relative">
+          <h1 className="text-2xl font-black text-blue-700 tracking-tighter drop-shadow-[0_0_8px_rgba(37,99,235,0.6)] animate-pulse">
+            TRAFFIC-DZ
+          </h1>
+        </div>
+        <button 
+          onClick={() => setStep(step === 1 ? 2 : 1)} 
+          className="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-lg active:scale-95"
+        >
+          {step === 1 ? "➕ أنشر إعلانك" : "🏠 الرئيسية"}
         </button>
       </nav>
 
-      <main className="max-w-xl mx-auto p-4">
+      <main className="max-w-xl mx-auto p-4 flex-grow w-full">
         {step === 1 ? (
           <div className="space-y-4">
-            <h2 className="text-center font-bold text-slate-500 text-sm py-2">أحدث الإعلانات</h2>
-            {allAds.length > 0 ? allAds.map((ad, i) => (
-              <div key={ad.id || i} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-blue-300 transition-all cursor-pointer" onClick={() => handleAdClick(ad, i)}>
+            <div className="text-center py-4">
+              <h2 className="text-lg font-bold text-slate-700">الإعلانات النشطة</h2>
+              <div className="h-1 w-12 bg-blue-600 mx-auto mt-1 rounded-full"></div>
+            </div>
+            
+            {allAds.map((ad, i) => (
+              <div 
+                key={ad.id || i} 
+                className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 hover:border-blue-400 transition-all cursor-pointer group" 
+                onClick={() => handleAdClick(ad, i)}
+              >
                 <div className="flex justify-between items-start">
-                  <h3 className="font-bold text-blue-700 text-lg leading-tight">{ad.title}</h3>
-                  <span className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-1 rounded-lg">
-                    {ad.clicks || 0} زيارة 👁️
+                  <h3 className="font-black text-slate-800 text-lg leading-tight group-hover:text-blue-600 transition-colors">
+                    {ad.title}
+                  </h3>
+                  <span className="bg-blue-50 text-blue-700 text-[11px] font-black px-3 py-1.5 rounded-full border border-blue-100">
+                    {ad.clicks || 0} زيارة
                   </span>
                 </div>
-                <p className="mt-3 text-[11px] text-slate-400 font-medium">بواسطة: {ad.name}</p>
+                <div className="mt-4 flex items-center text-[12px] text-slate-500 font-bold">
+                  <span className="bg-slate-100 px-2 py-1 rounded-md">بواسطة: {ad.name}</span>
+                </div>
               </div>
-            )) : (
-              <div className="text-center py-20 border-2 border-dashed rounded-3xl">
-                <p className="text-slate-400">لا توجد إعلانات حالياً، كن أول من ينشر!</p>
-              </div>
-            )}
+            ))}
           </div>
         ) : (
-          <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border">
-             <h2 className="text-xl font-black text-center text-blue-700 mb-6">نشر إعلان جديد</h2>
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
+             <h2 className="text-2xl font-black text-center text-slate-800 mb-8">إضافة إعلان جديد</h2>
              
              {requiredCount > 0 && (
-               <div className="space-y-2 mb-6">
-                <p className="text-[11px] text-center text-slate-500 mb-4 font-bold">
-                  يجب زيارة المواقع التالية لتفعيل النشر ({visitedCount}/{requiredCount})
+               <div className="space-y-3 mb-8">
+                <p className="text-sm text-center text-slate-600 mb-4 font-bold">
+                  زيارة المواقع المطلوبة: ({clickedLinks.size}/{requiredCount})
                 </p>
                 {targetAds.map((ad, i) => (
                   <button 
                     key={ad.id || i} 
                     onClick={() => handleAdClick(ad, i)} 
-                    className={`w-full p-4 rounded-2xl border text-right flex justify-between items-center transition ${clickedLinks.has(ad.id || `admin-${i}`) ? 'bg-green-50 border-green-200 text-green-700' : 'bg-slate-50 hover:border-blue-300'}`}
+                    className={`w-full p-4 rounded-2xl border-2 text-right flex justify-between items-center transition-all ${clickedLinks.has(ad.id || `target-${i}`) ? 'bg-green-50 border-green-500 text-green-700' : 'bg-white border-slate-100 hover:border-blue-200 text-slate-700'}`}
                   >
-                    <span className="font-bold text-sm truncate ml-2">{ad.title}</span>
-                    {clickedLinks.has(ad.id || `admin-${i}`) ? <span className="text-xs">✅ تمت الزيارة</span> : <span className="text-xs text-blue-600 font-bold">زيارة</span>}
+                    <span className="font-bold text-sm">{ad.title}</span>
+                    {clickedLinks.has(ad.id || `target-${i}`) ? <span className="text-xs font-black">تمت الزيارة ✓</span> : <span className="text-xs font-black text-blue-600">زيارة الآن</span>}
                   </button>
                 ))}
               </div>
              )}
 
-            <form onSubmit={handlePublish} className={`space-y-3 ${(visitedCount < requiredCount || !canPublish) ? 'opacity-30 pointer-events-none' : ''}`}>
-              <input type="text" placeholder="اسمك" required className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" onChange={e => setFormData({...formData, name: e.target.value})} />
-              <input type="text" placeholder="عنوان الإعلان" required className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" onChange={e => setFormData({...formData, title: e.target.value})} />
-              <input type="url" placeholder="رابط الموقع" required className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" onChange={e => setFormData({...formData, url: e.target.value})} />
-              <button disabled={loading || !canPublish} className={`w-full py-5 rounded-2xl font-black text-xl shadow-lg transition-all ${!canPublish ? 'bg-slate-400 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
-                {!canPublish ? `متبقي ${timeLeft}` : loading ? "جاري النشر..." : "أنشر الآن 🚀"}
+            <form onSubmit={handlePublish} className={`space-y-4 ${(clickedLinks.size < requiredCount || !canPublish) ? 'opacity-20 pointer-events-none' : ''}`}>
+              <div className="space-y-1">
+                <label className="text-xs font-black text-slate-500 mr-2">اسمك</label>
+                <input type="text" placeholder="مثلاً: محمد الجزائري" required className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold" onChange={e => setFormData({...formData, name: e.target.value})} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-black text-slate-500 mr-2">عنوان الإعلان</label>
+                <input type="text" placeholder="ماذا تقدم؟" required className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold" onChange={e => setFormData({...formData, title: e.target.value})} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-black text-slate-500 mr-2">الرابط</label>
+                <input type="url" placeholder="https://..." required className="w-full p-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:border-blue-500 focus:bg-white outline-none transition-all font-bold" onChange={e => setFormData({...formData, url: e.target.value})} />
+              </div>
+              
+              <button disabled={loading || !canPublish} className={`w-full py-5 rounded-2xl font-black text-xl shadow-xl transition-all mt-4 ${!canPublish ? 'bg-slate-300 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white active:scale-95'}`}>
+                {!canPublish ? `متاح بعد ${timeLeft}` : loading ? "جاري الحفظ..." : "تأكيد ونشر الإعلان"}
               </button>
             </form>
           </div>
         )}
       </main>
+
+      {/* تذييل الصفحة (Footer) */}
+      <footer className="bg-white border-t border-slate-200 p-6 mt-10">
+        <div className="max-w-xl mx-auto text-center">
+          <p className="text-slate-800 font-black text-sm">
+            &copy; 2026 جميع الحقوق محفوظة لموقع <span className="text-blue-600">TRAFFIC-DZ</span>
+          </p>
+          <p className="text-slate-400 text-[10px] font-bold mt-1 uppercase tracking-widest">
+            The Best Traffic Exchange Platform in Algeria
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
