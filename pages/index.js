@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from '@supabase/supabase-js';
 
-// المفاتيح الصحيحة التي أرسلتها أنت يا مصطفى
+// إعدادات الاتصال بـ Supabase
 const supabaseUrl = 'https://rhhdvcatxfebxugcdlua.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoaGR2Y2F0eGZlYnh1Z2NkbHVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNDg4OTQsImV4cCI6MjA4NTkyNDg5NH0.12qmM8PcddSAxH7TQXj44Ez1F5WATQ6ve8Q_vvmJzqg';
 
@@ -15,6 +15,7 @@ export default function Home() {
   const [formData, setFormData] = useState({ name: "", title: "", url: "" });
   const [loading, setLoading] = useState(false);
 
+  // إعلانات الإدارة
   const myAds = [
     { id: "1", title: "متجر أنفال - Anfel Store", url: "https://anfelstore.myecomsite.net/xfam8EKdg/8WNYmFCd6" },
     { id: "2", title: "ديماس شوبينغ - Dymas", url: "https://dymasshopping.flexdz.store/products/details/6979254d749bf018b1a27c91" },
@@ -23,23 +24,25 @@ export default function Home() {
     { id: "5", title: "آلة البطاطس - TeymShop", url: "https://teymshop.store/products/machine-pomme-de-terre" }
   ];
 
-  // جلب إعلانات الأعضاء من قاعدة البيانات
+  // جلب إعلانات الأعضاء عند تحميل الصفحة
   useEffect(() => {
     async function getAds() {
-      const { data, error } = await supabase
-        .from('ads')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error("خطأ في جلب البيانات:", error.message);
-      } else {
+      try {
+        const { data, error } = await supabase
+          .from('ads')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
         setMemberAds(data || []);
+      } catch (error) {
+        console.error("خطأ في جلب البيانات:", error.message);
       }
     }
     getAds();
   }, []);
 
+  // دالة التعامل مع الزيارات
   const handleVisit = (id, url) => {
     window.open(url, "_blank");
     if (!clickedLinks.has(id)) {
@@ -49,21 +52,42 @@ export default function Home() {
     }
   };
 
+  // دالة نشر الإعلان
   const handlePublish = async (e) => {
     e.preventDefault();
-    if (visitedCount < 5) return alert("يرجى زيارة 5 مواقع أولاً!");
     
-    setLoading(true);
-    const { error } = await supabase.from('ads').insert([
-      { name: formData.name, title: formData.title, url: formData.url }
-    ]);
+    if (visitedCount < 5) {
+      alert("⚠️ يرجى زيارة جميع المواقع الخمسة أولاً لتفعيل النشر!");
+      return;
+    }
 
-    if (error) {
-      alert("فشل النشر: " + error.message);
-      setLoading(false);
-    } else {
-      alert("مبروك يا مصطفى! تم نشر إعلانك بنجاح.");
+    setLoading(true);
+
+    try {
+      // إرسال البيانات إلى جدول ads
+      // تأكد أن هذه الأعمدة (name, title, url) موجودة في جداولك في Supabase
+      const { error } = await supabase.from('ads').insert([
+        { 
+          name: formData.name, 
+          title: formData.title, 
+          url: formData.url 
+        }
+      ]);
+
+      if (error) {
+        // إذا استمر الخطأ، سنعرضه هنا بالتفصيل
+        throw error;
+      }
+
+      alert("🎉 مبروك! تم نشر إعلانك بنجاح.");
+      // إعادة تعيين النموذج أو تحديث الصفحة
       window.location.reload();
+
+    } catch (error) {
+      alert("❌ فشل النشر: " + error.message);
+      console.error("Error details:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -82,6 +106,7 @@ export default function Home() {
 
       <main className="max-w-xl mx-auto p-4 py-6">
         {step === 1 ? (
+          /* واجهة عرض الإعلانات */
           <div className="space-y-6">
             <h2 className="text-2xl font-black text-center text-blue-600">إعلانات الأعضاء</h2>
             <div className="grid gap-3">
@@ -97,7 +122,7 @@ export default function Home() {
               {memberAds.length > 0 ? memberAds.map((ad, i) => (
                 <a key={i} href={ad.url} target="_blank" rel="noopener noreferrer" className="p-4 border rounded-xl flex flex-col bg-white shadow-sm hover:border-blue-300 transition">
                   <span className="font-bold text-blue-500">{ad.title}</span>
-                  <span className="text-[10px] text-slate-400">بواسطة: {ad.name}</span>
+                  <span className="text-[10px] text-slate-400">بواسطة: {ad.name || 'عضو غير معروف'}</span>
                 </a>
               )) : (
                 <div className="text-center py-10 border-2 border-dashed rounded-xl">
@@ -107,6 +132,7 @@ export default function Home() {
             </div>
           </div>
         ) : (
+          /* واجهة إضافة إعلان جديد */
           <div className="bg-slate-50 p-6 rounded-3xl border shadow-inner">
             <h2 className="text-xl font-black text-center mb-6">أنشر إعلانك الآن</h2>
             
@@ -124,13 +150,32 @@ export default function Home() {
               ))}
             </div>
 
-            <form onSubmit={handlePublish} className={`space-y-3 transition-opacity ${visitedCount < 5 ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-              <input type="text" placeholder="اسمك الكريم" required className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" onChange={e => setFormData({...formData, name: e.target.value})} />
-              <input type="text" placeholder="ما هو عنوان إعلانك؟" required className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" onChange={e => setFormData({...formData, title: e.target.value})} />
-              <input type="url" placeholder="رابط الموقع (https://...)" required className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" onChange={e => setFormData({...formData, url: e.target.value})} />
+            <form onSubmit={handlePublish} className={`space-y-3 transition-opacity ${visitedCount < 5 ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+              <input 
+                type="text" 
+                placeholder="اسمك الكريم" 
+                required 
+                className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" 
+                onChange={e => setFormData({...formData, name: e.target.value})} 
+              />
+              <input 
+                type="text" 
+                placeholder="ما هو عنوان إعلانك؟" 
+                required 
+                className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" 
+                onChange={e => setFormData({...formData, title: e.target.value})} 
+              />
+              <input 
+                type="url" 
+                placeholder="رابط الموقع (https://...)" 
+                required 
+                className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" 
+                onChange={e => setFormData({...formData, url: e.target.value})} 
+              />
               <button 
-                disabled={loading}
-                className="w-full py-4 bg-blue-600 text-white rounded-xl font-black text-lg hover:bg-blue-700 active:scale-95 transition"
+                type="submit"
+                disabled={loading || visitedCount < 5}
+                className={`w-full py-4 rounded-xl font-black text-lg transition ${loading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700 text-white active:scale-95'}`}
               >
                 {loading ? "جاري النشر..." : "تأكيد ونشر الإعلان"}
               </button>
