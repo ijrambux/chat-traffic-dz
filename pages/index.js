@@ -2,48 +2,21 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 
 export default function TrafficSystem() {
-  const [step, setStep] = useState('wall'); 
+  const [step, setStep] = useState('landing'); 
   const [timer, setTimer] = useState(0);
   const [isAdActive, setIsAdActive] = useState(false);
-  const [visitedCount, setVisitedCount] = useState(0);
-  const [timeLeft, setTimeLeft] = useState("");
+  const [isVerified, setIsVerified] = useState(false);
 
+  // إعلانات الأعضاء المسجلين (مثال)
   const [ads] = useState([
-    { id: 1, title: "Mouzaia Delivery", url: "https://t.me/MouzaiaDelivery", time: "نشط" },
-    { id: 2, title: "خدمات شحن الألعاب", url: "https://t.me/example", time: "نشط" }
+    { id: 1, user: "MisterAI", title: "Mouzaia Delivery", url: "https://t.me/MouzaiaDelivery" },
+    { id: 2, user: "أحمد", title: "بيع بطاقات جوجل", url: "https://google.com" },
   ]);
 
-  // التحقق من قيود الجهاز عند محاولة النشر
-  const checkDeviceLimit = () => {
-    const lastPost = localStorage.getItem('last_post_time');
-    if (lastPost) {
-      const now = new Date().getTime();
-      const diff = now - parseInt(lastPost);
-      const dayInMs = 24 * 60 * 60 * 1000;
-
-      if (diff < dayInMs) {
-        const remaining = dayInMs - diff;
-        const hours = Math.floor(remaining / (1000 * 60 * 60));
-        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-        setTimeLeft(`${hours} ساعة و ${minutes} دقيقة`);
-        return false;
-      }
-    }
-    return true;
-  };
-
-  const handleStartPost = () => {
-    if (checkDeviceLimit()) {
-      setStep('task');
-    } else {
-      setStep('locked');
-    }
-  };
-
-  const startTask = (url) => {
-    window.open(url, '_blank');
+  const startMandatoryAd = () => {
+    window.open("https://t.me/MouzaiaDelivery", '_blank');
     setIsAdActive(true);
-    setTimer(10);
+    setTimer(10); 
   };
 
   useEffect(() => {
@@ -52,48 +25,110 @@ export default function TrafficSystem() {
       interval = setInterval(() => setTimer(t => t - 1), 1000);
     } else if (isAdActive && timer === 0) {
       setIsAdActive(false);
-      setVisitedCount(prev => prev + 1);
+      setIsVerified(true);
+      setStep('register'); // الانتقال التلقائي للتسجيل بعد الزيارة
     }
     return () => clearInterval(interval);
   }, [isAdActive, timer]);
 
-  const handlePostAd = (e) => {
+  const handleFinalRegister = (e) => {
     e.preventDefault();
-    const postTime = new Date().getTime();
-    localStorage.setItem('last_post_time', postTime.toString());
-    alert("✅ تم نشر إعلانك! جهازك الآن مقفل لمدة 24 ساعة.");
+    localStorage.setItem('has_posted', 'true');
     setStep('wall');
   };
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white font-sans p-6 flex flex-col items-center">
+    <div className="min-h-screen bg-[#0f172a] text-white font-sans p-6 flex justify-center">
       <Head>
-        <title>Traffic Wall DZ</title>
+        <title>Chat Traffic DZ</title>
         <script src="https://cdn.tailwindcss.com"></script>
       </Head>
 
-      <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-black text-blue-500 italic uppercase">TRAFFIC DZ</h1>
-          <p className="text-slate-500 text-[10px] font-bold tracking-[0.3em] mt-2 italic">نظام التبادل العادل</p>
-        </div>
+      <div className="w-full max-w-2xl">
+        
+        {/* 1. الصفحة الرئيسية (شرح وشروط) */}
+        {step === 'landing' && (
+          <div className="animate-in fade-in duration-700 text-center py-10">
+            <h1 className="text-5xl font-black text-blue-500 mb-6 italic">TRAFFIC DZ</h1>
+            
+            <div className="bg-[#1e293b] p-8 rounded-[2.5rem] border border-slate-700 text-right space-y-6 mb-8">
+              <h2 className="text-xl font-bold border-b border-slate-700 pb-2 text-blue-400">كيف تعمل المنصة؟</h2>
+              <p className="text-slate-400 text-sm leading-relaxed">قم بزيارة إعلان الممول لمدة 10 ثوانٍ، ثم سجل بيانات إعلانك لتظهر للآلاف من زوارنا مجاناً.</p>
+              
+              <h2 className="text-xl font-bold border-b border-slate-700 pb-2 text-blue-400">شروط الخدمة</h2>
+              <ul className="text-slate-400 text-sm space-y-2 pr-4 list-disc list-inside">
+                <li>يمنع نشر روابط مخلة أو احتيالية.</li>
+                <li>إعلان واحد فقط لكل جهاز كل 24 ساعة.</li>
+                <li>يجب احترام أعضاء المجتمع.</li>
+              </ul>
+            </div>
 
-        {/* 1. جدار الإعلانات */}
-        {step === 'wall' && (
-          <div className="space-y-4 animate-in fade-in">
             <button 
-              onClick={handleStartPost}
-              className="w-full bg-blue-600 py-4 rounded-2xl font-black text-lg shadow-xl shadow-blue-600/20 hover:bg-blue-500 transition-all border-b-4 border-blue-800"
+              onClick={() => setStep('mandatory')}
+              className="bg-blue-600 px-16 py-5 rounded-2xl font-black text-2xl shadow-xl hover:bg-blue-500 transition-all"
             >
-              ➕ أنشر إعلانك الآن
+              موافق، ابدأ الآن 🚀
             </button>
-            <div className="grid gap-3 mt-8 text-right">
+          </div>
+        )}
+
+        {/* 2. الإعلان الإجباري */}
+        {step === 'mandatory' && (
+          <div className="flex items-center justify-center min-h-[60vh] animate-in zoom-in text-center">
+            <div className="bg-[#1e293b] p-10 rounded-[3rem] border-4 border-blue-600/20 w-full shadow-2xl">
+              <h2 className="text-2xl font-black mb-4">خطوة التحقق الإلزامية</h2>
+              <p className="text-slate-400 mb-8 font-medium">شاهد إعلان القناة الرسمية لتفتح لك خانات التسجيل</p>
+              
+              <button 
+                disabled={isAdActive}
+                onClick={startMandatoryAd}
+                className="bg-blue-600 px-10 py-5 rounded-2xl font-black text-xl disabled:bg-slate-700 transition-all shadow-lg"
+              >
+                {isAdActive ? `انتظر ${timer} ثوانٍ...` : "زيارة إعلان القناة 🔗"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 3. واجهة التسجيل (3 خانات) */}
+        {step === 'register' && (
+          <div className="animate-in slide-in-from-bottom p-4">
+            <div className="bg-[#1e293b] p-8 rounded-[2.5rem] border border-blue-500/30">
+              <h2 className="text-2xl font-black mb-6 text-center text-blue-400">تسجيل إعلانك الجديد</h2>
+              <form onSubmit={handleFinalRegister} className="space-y-5 text-right font-bold">
+                <div>
+                  <label className="text-xs text-slate-500 mr-2 mb-2 block">اسمك المستعار</label>
+                  <input required placeholder="مثلاً: MisterAI" className="w-full p-4 rounded-xl bg-[#0f172a] border border-slate-700 text-right outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 mr-2 mb-2 block">نوع الإعلان (العنوان)</label>
+                  <input required placeholder="ماذا تقدم في إعلانك؟" className="w-full p-4 rounded-xl bg-[#0f172a] border border-slate-700 text-right outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 mr-2 mb-2 block">رابط الإعلان (URL)</label>
+                  <input required type="url" placeholder="https://t.me/..." className="w-full p-4 rounded-xl bg-[#0f172a] border border-slate-700 text-left text-blue-400 outline-none focus:border-blue-500" />
+                </div>
+                <button className="w-full bg-green-600 py-5 rounded-2xl font-black text-xl hover:bg-green-500 shadow-xl mt-4">نشر الإعلان ودخول الجدار 🚀</button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* 4. جدار الإعلانات (الزيارة حرة) */}
+        {step === 'wall' && (
+          <div className="animate-in fade-in space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-black text-blue-400">جدار إعلانات الأعضاء</h2>
+              <p className="text-slate-500 text-xs mt-1 font-bold italic">الزيارات في هذا القسم اختيارية</p>
+            </div>
+
+            <div className="grid gap-4">
               {ads.map(ad => (
-                <div key={ad.id} className="bg-[#1e293b] p-5 rounded-2xl border border-slate-700 flex justify-between items-center group">
-                   <button onClick={() => window.open(ad.url, '_blank')} className="bg-blue-500/10 text-blue-400 p-3 rounded-xl hover:bg-blue-500 hover:text-white transition-all">🔗</button>
-                   <div>
+                <div key={ad.id} className="bg-[#1e293b] p-6 rounded-3xl border border-slate-800 flex justify-between items-center hover:border-blue-500/50 transition-all">
+                  <button onClick={() => window.open(ad.url, '_blank')} className="bg-blue-600 px-6 py-2 rounded-xl text-xs font-black shadow-lg">زيارة 🔗</button>
+                  <div className="text-right">
                     <h3 className="font-bold text-sm">{ad.title}</h3>
-                    <p className="text-[9px] text-green-500 font-bold uppercase tracking-widest mt-1">نشط حالياً</p>
+                    <p className="text-[10px] text-slate-500 mt-1">بواسطة: {ad.user}</p>
                   </div>
                 </div>
               ))}
@@ -101,58 +136,6 @@ export default function TrafficSystem() {
           </div>
         )}
 
-        {/* 2. حالة القفل (إذا سجل مسبقاً) */}
-        {step === 'locked' && (
-          <div className="bg-slate-900 border-2 border-red-500/30 p-8 rounded-[2.5rem] text-center animate-in zoom-in">
-            <div className="text-5xl mb-4">🚫</div>
-            <h2 className="text-xl font-black text-red-400 mb-2">عذراً! جهازك مقيد</h2>
-            <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-              لقد قمت بنشر إعلانك بالفعل. يسمح بنشر إعلان واحد فقط كل 24 ساعة لكل جهاز.
-            </p>
-            <div className="bg-red-500/10 p-3 rounded-xl border border-red-500/20 mb-6">
-              <span className="text-xs font-bold">بقي لك: {timeLeft}</span>
-            </div>
-            <button onClick={() => setStep('wall')} className="text-slate-500 text-xs font-bold underline">العودة للجدار</button>
-          </div>
-        )}
-
-        {/* 3. شرط الزيارة (المهمة) */}
-        {step === 'task' && (
-          <div className="bg-[#1e293b] p-8 rounded-[2.5rem] border border-blue-500/30 text-center animate-in zoom-in">
-            <h2 className="text-2xl font-black mb-6">خطوة التحقق</h2>
-            <div className="p-4 bg-[#0f172a] rounded-2xl border border-slate-700 flex justify-between items-center mb-8">
-               <button 
-                disabled={isAdActive || visitedCount > 0}
-                onClick={() => startTask(ads[0].url)}
-                className="bg-blue-600 px-5 py-2 rounded-xl text-xs font-black disabled:bg-green-600 transition-all"
-              >
-                {isAdActive ? `${timer}ث` : visitedCount > 0 ? "✅ تمت" : "زيارة"}
-              </button>
-              <span className="font-bold text-xs text-slate-300">دعم رابط العضو السابق</span>
-            </div>
-            {visitedCount > 0 && (
-              <button onClick={() => setStep('postForm')} className="w-full bg-green-600 py-4 rounded-xl font-bold animate-bounce shadow-lg shadow-green-600/20">متابعة النشر ➡️</button>
-            )}
-          </div>
-        )}
-
-        {/* 4. نموذج الإعلان */}
-        {step === 'postForm' && (
-          <div className="bg-[#1e293b] p-8 rounded-[2.5rem] border border-blue-500/30 animate-in slide-in-from-bottom">
-            <h2 className="text-2xl font-black mb-6 text-center text-blue-400 font-bold">بيانات إعلانك</h2>
-            <form onSubmit={handlePostAd} className="space-y-5 text-right">
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 mb-2 block uppercase tracking-widest">نوع الإعلان</label>
-                <input name="adTitle" required placeholder="توصيل، بيع، قناة..." className="w-full p-4 rounded-xl bg-[#0f172a] border border-slate-700 text-right font-bold text-sm focus:border-blue-500 outline-none" />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 mb-2 block uppercase tracking-widest">الرابط الخاص بك</label>
-                <input name="adLink" type="url" required placeholder="https://t.me/your_link" className="w-full p-4 rounded-xl bg-[#0f172a] border border-slate-700 text-left font-bold text-sm text-blue-400 outline-none focus:border-blue-500" />
-              </div>
-              <button className="w-full bg-blue-600 py-5 rounded-2xl font-black text-xl hover:bg-blue-500 shadow-xl mt-4">تأكيد ونشر 🚀</button>
-            </form>
-          </div>
-        )}
       </div>
     </div>
   );
