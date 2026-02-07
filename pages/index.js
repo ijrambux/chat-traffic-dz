@@ -17,6 +17,8 @@ export default function Home() {
   const [activeAd, setActiveAd] = useState(null);
   const [ads, setAds] = useState([]);
 
+  const staticAdUrl = "https://otieu.com/4/10578997";
+
   useEffect(() => {
     checkUser();
     fetchAds();
@@ -57,71 +59,56 @@ export default function Home() {
       ? await supabase.auth.signInWithPassword({ email, password })
       : await supabase.auth.signUp({ email, password });
 
-    if (result.error) alert(result.error.message);
+    if (result.error) alert("خطأ: " + result.error.message);
     else if (authStep === "login") { setUser(result.data.user); fetchProfile(result.data.user.id); }
-    else alert("تأكد من بريدك الإلكتروني لتفعيل الحساب");
+    else alert("تم! تفقد بريدك الإلكتروني");
     setLoading(false);
   };
 
+  const startAd = (url, type, adId = null) => {
+    const now = new Date().getTime();
+    const lastClick = localStorage.getItem(`last_click_${adId || 'static'}`);
+    
+    if (type === 'static' && lastClick && now - lastClick < 24 * 60 * 60 * 1000) {
+      alert(`عذراً! هذا الإعلان متاح مرة كل 24 ساعة.`);
+      return;
+    }
+
+    setActiveAd({ url, type, adId });
+    setTimer(30);
+    setStep(3);
+    window.open(url, "_blank");
+  };
+
   const handleReward = async () => {
-    const reward = 1.00; // 1 دج لكل إعلان
-    const { error } = await supabase.from('profiles').update({ balance: userBalance + reward }).eq('id', user.id);
+    const reward = activeAd.type === 'static' ? 0.50 : 0.25; 
+    const newBalance = userBalance + reward;
+    const { error } = await supabase.from('profiles').update({ balance: newBalance }).eq('id', user.id);
+    
     if (!error) {
-      setUserBalance(prev => prev + reward);
+      if (activeAd.type === 'static') {
+        localStorage.setItem(`last_click_${activeAd.adId || 'static'}`, new Date().getTime().toString());
+      }
+      setUserBalance(newBalance);
       setStep(1);
-      alert("✅ تمت إضافة 1 دج إلى رصيدك");
     }
   };
 
-  // --- واجهة العداد ---
+  // --- واجهة العداد المحترفة ---
   if (step === 3) {
     return (
-      <div className="fixed inset-0 bg-slate-900 z-[100] flex items-center justify-center p-6 text-white font-sans" dir="rtl">
-        <div className="bg-white text-slate-900 p-8 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center">
-          <div className="text-6xl font-black text-blue-600 mb-4">{timer}</div>
-          <h2 className="text-xl font-black mb-2">جاري احتساب الرصيد</h2>
-          <p className="text-slate-400 font-bold text-sm mb-6">شاهد الإعلان المفتوح، سنعيدك تلقائياً بعد انتهاء الوقت.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // --- واجهة البداية الاحترافية ---
-  if (!user && authStep === "landing") {
-    return (
-      <div className="min-h-screen bg-slate-50 font-sans" dir="rtl">
-        <nav className="p-6 bg-white flex justify-between items-center border-b border-slate-100">
-          <h1 className="text-2xl font-black text-blue-600">TRAFFIC-DZ</h1>
-          <button onClick={() => setAuthStep("login")} className="bg-blue-600 text-white px-6 py-2 rounded-full font-black text-sm shadow-md">دخول</button>
-        </nav>
-
-        <header className="py-20 px-6 text-center">
-          <h2 className="text-4xl font-black text-slate-800 mb-6 leading-tight">أول منصة PTC جزائرية <br/>بأرباح حقيقية 🇩🇿</h2>
-          <div className="flex flex-wrap justify-center gap-4 mb-10">
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-blue-50">
-              <p className="text-blue-600 font-black">1 دج</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase">لكل نقرة</p>
-            </div>
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-blue-50">
-              <p className="text-blue-600 font-black">500 دج</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase">الحد أدنى للسحب</p>
+      <div className="fixed inset-0 bg-[#0f172a] z-[100] flex items-center justify-center p-6 text-white font-sans" dir="rtl">
+        <div className="relative group">
+          <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-emerald-500 rounded-[3rem] blur opacity-25 animate-pulse"></div>
+          <div className="relative bg-white text-slate-900 p-10 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center">
+            <div className="text-7xl font-black bg-gradient-to-br from-blue-600 to-emerald-500 bg-clip-text text-transparent mb-4">{timer}</div>
+            <h2 className="text-xl font-bold mb-2">جاري التحقق من الأمان</h2>
+            <p className="text-slate-400 text-sm mb-8 font-medium">ستحصل على {activeAd.type === 'static' ? '0.50' : '0.25'} دج فور انتهاء الوقت</p>
+            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+              <div className="bg-blue-600 h-full transition-all duration-1000 ease-linear" style={{ width: `${(30 - timer) / 30 * 100}%` }}></div>
             </div>
           </div>
-          <button onClick={() => setAuthStep("signup")} className="bg-blue-600 text-white px-12 py-5 rounded-3xl font-black text-xl shadow-2xl transition-transform hover:scale-105">إنشاء حساب وابدأ الربح</button>
-        </header>
-
-        <section className="max-w-4xl mx-auto px-6 py-10 border-t border-slate-200">
-          <h3 className="text-xl font-black mb-6">قوانين المنصة ⚖️</h3>
-          <ul className="space-y-4 text-slate-500 font-bold text-sm leading-relaxed">
-            <li>• يمنع استخدام الـ VPN أو البرامج التلقائية (حظر نهائي).</li>
-            <li>• الحد الأدنى لطلب السحب عبر بريدي موب هو 500 دج.</li>
-            <li>• يتم معالجة طلبات السحب في غضون 24-48 ساعة.</li>
-          </ul>
-        </section>
-
-        <footer className="py-10 text-center border-t border-slate-100">
-          <p className="text-[11px] font-black text-slate-400">TRAFFIC-DZ &copy; 2026 | جميع الحقوق محفوظة</p>
-        </footer>
+        </div>
       </div>
     );
   }
@@ -129,79 +116,139 @@ export default function Home() {
   // --- واجهة تسجيل الدخول ---
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6" dir="rtl">
-        <div className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-md">
-          <h2 className="text-2xl font-black text-center mb-8 text-blue-600 tracking-tighter">TRAFFIC-DZ</h2>
-          <form onSubmit={handleAuth} className="space-y-5">
-            <input type="email" placeholder="البريد الإلكتروني" className="w-full p-4 bg-slate-50 rounded-2xl font-bold" onChange={e => setEmail(e.target.value)} required />
-            <input type="password" placeholder="كلمة المرور" className="w-full p-4 bg-slate-50 rounded-2xl font-bold" onChange={e => setPassword(e.target.value)} required />
-            <button className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-lg">{authStep === "login" ? "دخول" : "اشتراك جديد"}</button>
-            <p onClick={() => setAuthStep(authStep === "login" ? "signup" : "login")} className="text-center text-xs font-bold text-blue-600 cursor-pointer underline">أو قم بـ {authStep === "login" ? "فتح حساب جديد" : "تسجيل الدخول"}</p>
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-6 font-sans" dir="rtl">
+        <div className="bg-white p-10 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] w-full max-w-md border border-slate-100">
+          <div className="text-center mb-10">
+             <div className="inline-block p-4 bg-blue-50 rounded-3xl mb-4">
+                <span className="text-3xl">🇩🇿</span>
+             </div>
+             <h1 className="text-3xl font-black text-slate-800 tracking-tight">TRAFFIC-DZ</h1>
+             <p className="text-slate-400 text-xs font-bold mt-1 uppercase tracking-widest">Premium PTC Platform</p>
+          </div>
+          
+          <div className="flex bg-slate-50 p-1.5 rounded-2xl mb-8">
+            <button onClick={() => setAuthStep("login")} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${authStep === "login" ? "bg-white text-blue-600 shadow-sm" : "text-slate-400"}`}>دخول</button>
+            <button onClick={() => setAuthStep("signup")} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${authStep === "signup" ? "bg-white text-blue-600 shadow-sm" : "text-slate-400"}`}>تسجيل</button>
+          </div>
+
+          <form onSubmit={handleAuth} className="space-y-4">
+            <input type="email" placeholder="البريد الإلكتروني" className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-blue-500 transition-all outline-none" onChange={e => setEmail(e.target.value)} required />
+            <input type="password" placeholder="كلمة المرور" className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-blue-500 transition-all outline-none" onChange={e => setPassword(e.target.value)} required />
+            <button className="w-full py-5 bg-[#1e293b] text-white rounded-2xl font-black text-lg shadow-xl hover:bg-blue-600 transition-all transform active:scale-95">
+              {authStep === "login" ? "تسجيل الدخول" : "إنشاء حساب مجاني"}
+            </button>
           </form>
         </div>
       </div>
     );
   }
 
-  // --- لوحة التحكم الرئيسية ---
+  // --- الواجهة الرئيسية المحترفة ---
   return (
-    <div className="min-h-screen bg-slate-50 font-sans flex flex-col" dir="rtl">
-      <nav className="p-4 bg-white border-b-2 border-blue-600 shadow-sm flex justify-between items-center sticky top-0 z-50">
-        <div>
-           <h1 className="text-xl font-black text-blue-700 leading-none">TRAFFIC-DZ</h1>
-           <span className="text-[8px] font-bold text-slate-400">لوحة تحكم الأعضاء</span>
-        </div>
-        <div className="bg-blue-600 text-white px-5 py-2 rounded-2xl font-black text-sm shadow-md">
-           {userBalance.toFixed(2)} دج
+    <div className="min-h-screen bg-[#fbfcfd] font-sans" dir="rtl">
+      {/* Navbar العصري */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 p-4">
+        <div className="max-w-xl mx-auto flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-black text-slate-800 tracking-tighter">TRAFFIC<span className="text-blue-600">-DZ</span></h1>
+          </div>
+          <div className="flex items-center gap-3">
+             <div className="bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-2xl">
+                <span className="text-emerald-600 font-black text-sm">{userBalance.toFixed(2)} دج</span>
+             </div>
+             <button onClick={() => supabase.auth.signOut()} className="bg-slate-100 p-2 rounded-xl text-slate-400 hover:text-red-500 transition-colors">
+               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+             </button>
+          </div>
         </div>
       </nav>
 
-      <main className="max-w-xl mx-auto p-4 w-full flex-grow">
-        {/* قسم المعلنين */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 rounded-[2.5rem] text-white mb-8 shadow-xl">
-           <h3 className="text-lg font-black mb-2">تريد الإعلان في الموقع؟ 📈</h3>
-           <p className="text-xs font-bold opacity-80 mb-4 leading-relaxed">احصل على آلاف الزيارات الجزائرية لموقعك بأسعار تنافسية. تواصل معنا لتفعيل إعلانك فوراً.</p>
-           <a href="https://t.me/YOUR_TELEGRAM" target="_blank" className="inline-block bg-white text-blue-700 px-6 py-2 rounded-xl font-black text-xs shadow-sm">تواصل عبر تليجرام</a>
+      <main className="max-w-xl mx-auto p-4 space-y-8 pb-24">
+        
+        {/* بطاقة الترحيب والإعلان */}
+        <div className="relative group mt-4">
+           <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[2.5rem] blur opacity-20 transition duration-1000 group-hover:opacity-40"></div>
+           <div className="relative bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-50">
+              <h3 className="text-xl font-black text-slate-800 mb-2">منصة المعلنين 📢</h3>
+              <p className="text-slate-400 text-xs font-medium mb-6 leading-relaxed">روّج لموقعك أو صفحتك بأسعار تبدأ من 500 دج لـ 1000 زيارة حقيقية من الجزائر.</p>
+              <a href="https://t.me/YOUR_TELEGRAM" target="_blank" className="flex items-center justify-center gap-2 bg-[#1e293b] text-white py-3 px-6 rounded-2xl font-bold text-sm shadow-lg hover:bg-blue-600 transition-all w-max">
+                اتصل بنا لتفعيل إعلانك
+              </a>
+           </div>
         </div>
 
-        {/* الإعلانات الثابتة (4 إعلانات) */}
-        <h2 className="text-xs font-black text-slate-400 mr-2 mb-4 uppercase tracking-widest">إعلانات مميزة (ثابتة)</h2>
-        <div className="grid grid-cols-2 gap-4 mb-10">
-           {[...Array(4)].map((_, i) => (
-             <div key={i} className="bg-white p-4 rounded-3xl border border-blue-100 shadow-sm text-center h-24 flex items-center justify-center font-black text-slate-300 border-dashed">
-                مساحة إعلانية {i+1}
-             </div>
-           ))}
+        {/* شبكة الإعلانات الثابتة */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center px-2">
+            <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">إعلانات ثابتة VIP</h2>
+            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">تتجدد يومياً</span>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <button 
+                key={i} 
+                onClick={() => startAd(staticAdUrl, 'static', `st_${i}`)}
+                className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all group text-right"
+              >
+                <div className="bg-blue-50 w-10 h-10 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform text-lg">💎</div>
+                <p className="font-black text-slate-800 text-sm">إعلان مميز {i}</p>
+                <p className="text-blue-600 font-bold text-[10px] mt-1">المكافأة: 0.50 دج</p>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* الإعلانات المدفوعة (غير محدودة) */}
-        <h2 className="text-xs font-black text-slate-400 mr-2 mb-4 uppercase tracking-widest">إعلانات المستخدمين (+1 دج)</h2>
-        <div className="space-y-3">
-           {ads.map((ad, i) => (
-             <div key={i} className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex justify-between items-center cursor-pointer hover:border-blue-500 transition-all" onClick={() => startAd(ad)}>
-                <div>
-                   <h4 className="font-black text-slate-800">{ad.title}</h4>
-                   <p className="text-[10px] font-bold text-slate-400 italic">بواسطة: {ad.name}</p>
+        {/* الإعلانات المدفوعة */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-black text-slate-800 px-2 uppercase tracking-widest">إعلانات المعلنين</h2>
+          <div className="space-y-3">
+            {ads.length > 0 ? ads.map((ad) => (
+              <button 
+                key={ad.id} 
+                onClick={() => startAd(ad.url, 'paid', ad.id)}
+                className="w-full bg-white p-5 rounded-[2rem] border border-slate-50 shadow-sm flex items-center justify-between hover:border-emerald-200 transition-all group text-right"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="bg-slate-50 p-3 rounded-2xl group-hover:bg-emerald-50 transition-colors text-lg">⚡</div>
+                  <div>
+                    <h4 className="font-black text-slate-800 text-sm tracking-tight">{ad.title}</h4>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">زيارة حقيقية</p>
+                  </div>
                 </div>
-                <span className="bg-green-100 text-green-700 px-3 py-1.5 rounded-full font-black text-[10px]">+ 1.00 دج</span>
-             </div>
-           ))}
+                <div className="bg-emerald-50 px-3 py-1.5 rounded-full">
+                  <span className="text-emerald-600 font-black text-[10px]">+ 0.25 دج</span>
+                </div>
+              </button>
+            )) : (
+              <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2rem] p-10 text-center">
+                <p className="text-slate-400 font-bold text-xs italic tracking-tight">لا توجد إعلانات مدفوعة حالياً..</p>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* قسم السحب */}
-        <div className="mt-12 bg-white p-8 rounded-[3rem] shadow-inner text-center">
-           <p className="text-xs font-black text-slate-400 mb-2">رصيدك الحالي: {userBalance.toFixed(2)} دج</p>
-           <button 
-             disabled={userBalance < 500}
-             className={`w-full py-4 rounded-2xl font-black text-lg transition-all ${userBalance >= 500 ? 'bg-green-500 text-white shadow-lg' : 'bg-slate-100 text-slate-300'}`}
-           >
-             {userBalance >= 500 ? "طلب سحب عبر بريدي موب" : "تحتاج 500 دج للسحب"}
-           </button>
+        {/* قسم السحب النهائي */}
+        <div className="pt-10">
+           <div className="bg-[#1e293b] p-8 rounded-[2.5rem] shadow-2xl text-center relative overflow-hidden">
+              <div className="relative z-10">
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">رصيدك القابل للسحب</p>
+                <h2 className="text-3xl font-black text-white mb-6 tracking-tighter">{userBalance.toFixed(2)} دج</h2>
+                <button 
+                  disabled={userBalance < 500}
+                  className={`w-full py-4 rounded-2xl font-black text-sm transition-all shadow-xl ${userBalance >= 500 ? 'bg-emerald-500 text-white hover:bg-emerald-400' : 'bg-white/5 text-white/20 cursor-not-allowed'}`}
+                >
+                  {userBalance >= 500 ? "طلب السحب (بريدي موب)" : "الحد الأدنى للسحب 500 دج"}
+                </button>
+              </div>
+              {/* زخرفة خلفية */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 blur-[80px] opacity-20"></div>
+           </div>
         </div>
       </main>
 
-      <footer className="p-8 text-center text-slate-300 font-bold text-[10px] tracking-[0.2em]">
-        TRAFFIC-DZ | MADE WITH ❤️ IN ALGERIA 🇩🇿
+      {/* Footer بسيط */}
+      <footer className="max-w-xl mx-auto p-8 text-center border-t border-slate-100">
+        <p className="text-slate-300 font-black text-[9px] uppercase tracking-[0.4em]">TRAFFIC-DZ &copy; 2026</p>
       </footer>
     </div>
   );
